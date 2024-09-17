@@ -1,7 +1,19 @@
 #include <iostream>
 #include "Card.h"
+#include <boost/asio.hpp>
+
+using boost::asio::ip::tcp;
 
 int main(){
+
+    try {
+        boost::asio::io_context io_context;
+        tcp::acceptor acceptor(io_context, tcp::endpoint(tcp::v4(),7000));
+    }
+    catch(std::exception& e)
+    {
+
+    }
 
     std::cout << "Hello server" << std::endl;
 
