@@ -4,25 +4,33 @@
 
 using boost::asio::ip::tcp;
 
-int main(){
-
-    try {
-        boost::asio::io_context io_context;
-        tcp::acceptor acceptor(io_context, tcp::endpoint(tcp::v4(),7000));
-    }
-    catch(std::exception& e)
+int main(int argc, char* argv[]){
+    try
     {
+        boost::asio::io_context io_context;
+        tcp::acceptor acceptor(io_context,tcp::endpoint(tcp::v4(),1337));
 
+        while(true) {
+            std::cout << "listening for a new connection...\n";
+            // create socket
+            tcp::socket socket(io_context);
+
+            // await and accept connection on a socket
+            acceptor.accept(socket);
+            std::cout << "new connection accepted!\n";
+            // write messeage to connected client
+            std::string hello_msg = "Hello from the server :D\n";
+            boost::system::error_code error;
+            boost::asio::write(socket,boost::asio::buffer(hello_msg),error);
+
+            // here socket goes out of scope and closes
+        }
     }
-
-    std::cout << "Hello server" << std::endl;
-
-    Card c1 = Card('K','A');
-    Card c2 = Card('T','A');
-    Card c3 = Card('6','A');
-    std::cout << c1.ToString() << '\t' << c1.GetValue() << std::endl;
-    std::cout << c2.ToString() << '\t' << c2.GetValue() << std::endl;
-    std::cout << c2.ToString() << '\t' << c3.GetValue() << std::endl;
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+    
     
     return 0;
 }
