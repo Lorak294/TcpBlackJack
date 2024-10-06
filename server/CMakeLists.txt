@@ -1,5 +1,15 @@
-add_executable(server main.cpp)
-target_link_libraries(server PUBLIC common)
+cmake_minimum_required(VERSION 3.20.0)
+set(CMAKE_CXX_STANDARD 20)
 
-target_include_directories(server PUBLIC ${Boost_INCLUDE_DIRS})
-target_link_libraries(server PUBLIC ${Boost_LIBRARIES})
+project(server)
+
+add_executable(${PROJECT_NAME} main.cpp)
+
+target_include_directories(${PROJECT_NAME} 
+    PUBLIC 
+        common
+)
+target_link_libraries(${PROJECT_NAME} 
+    PUBLIC 
+        common
+)

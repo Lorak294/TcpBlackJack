@@ -1,7 +1,8 @@
 #pragma once
 #include <string>
 #include <boost/asio.hpp>
-#include <TcpConnection.h>
+#include <server/TcpConnection.h>
+#include <functional>
 
 class TcpServer
 {
@@ -20,4 +21,14 @@ public:
     //~TcpListener();
 
     int Run();
+
+    template<typename T>
+    void WriteToClient(int connectionIdx, const T& message);
+
+
+    // callback takes the connection index and incoming message of type T
+    template<typename T>
+    using ListenCallback = std::function<void(int,const T&)>;
+    template<typename T>
+    void RegisterListenCallback(ListenCallback<T> callback);
 };

@@ -1,7 +1,7 @@
 #include <iostream>
 #include "Card.h"
 #include <boost/asio.hpp>
-#include <TcpServer.h>
+#include <server/TcpServer.h>
 
 using boost::asio::ip::tcp;
 
