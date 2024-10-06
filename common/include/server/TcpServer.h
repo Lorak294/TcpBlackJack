@@ -1,34 +1,41 @@
 #pragma once
-#include <string>
+
 #include <boost/asio.hpp>
 #include <server/TcpConnection.h>
 #include <functional>
+#include <optional>
+#include <unordered_set>
+#include <string>
 
-class TcpServer
-{
-private:
-    boost::asio::ip::tcp _ipVersion;
-    int _port;
+namespace Networking {
+    namespace io = boost::asio;
 
-    boost::asio::io_context _ioContext;
-    boost::asio::ip::tcp::acceptor _acceptor;
-    std::vector<TcpConnection::pointer> _connections {};
+    enum class Ipv {
+        V4,
+        V6
+    };
+    
+    class TcpServer
+    {
+    private:
+        Ipv _ipVersion;
+        int _port;
 
-    void startAccepting();
+        io::io_context _ioContext;
+        io::ip::tcp::acceptor _acceptor;
 
-public:
-    TcpServer(boost::asio::ip::tcp ipv, int port);
-    //~TcpListener();
+        // dummmy socket for accepting new connections
+        std::optional<io::ip::tcp::socket> _socket;
+        
+        // set of current connections
+        std::unordered_set<TcpConnection::pointer> _connections {};
 
-    int Run();
+        void startAccepting();
 
-    template<typename T>
-    void WriteToClient(int connectionIdx, const T& message);
+    public:
+        TcpServer(Ipv ipv, int port);
 
-
-    // callback takes the connection index and incoming message of type T
-    template<typename T>
-    using ListenCallback = std::function<void(int,const T&)>;
-    template<typename T>
-    void RegisterListenCallback(ListenCallback<T> callback);
-};
+        int Run();
+        void Broadcast(const std::string& message);
+    };
+}
