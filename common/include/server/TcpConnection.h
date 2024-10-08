@@ -8,6 +8,9 @@ namespace Networking {
     using boost::asio::ip::tcp;
     namespace io = boost::asio;
 
+    using MessageHandler = std::function<void(std::string)>;
+    using ErrorHandler = std::function<void()>;
+
     class TcpConnection : public std::enable_shared_from_this<TcpConnection>
     {
     public:
@@ -21,8 +24,12 @@ namespace Networking {
         std::queue<std::string> _outgoingMessages;
         // buffer for storing incoming messages
         io::streambuf _streambuff = io::streambuf(65536);
-
+    
+        // handlers
+        MessageHandler _messageHandler;
+        ErrorHandler _errorHandler;
         
+    private:    
         // private constructor
         explicit TcpConnection(io::ip::tcp::socket&& socket);
 
@@ -37,11 +44,13 @@ namespace Networking {
         // factory method that receives rvalue socket
         static pointer Create(io::ip::tcp::socket&& socket) { return pointer(new TcpConnection(std::move(socket))); }
         
+        // username getter
+        inline const std::string& GetUsername() { return _username; }
         // socket getter
         tcp::socket& GetSocket() { return _socket; }
         
         // starts the connection
-        void Start();
+        void Start(MessageHandler&& messageHandler, ErrorHandler&& errorHandler);
 
         // sends message to the client
         void Post(const std::string& message);

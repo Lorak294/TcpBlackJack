@@ -3,6 +3,8 @@
 
 namespace Networking {
 
+    // ======================== Private methods ========================
+
     TcpConnection::TcpConnection(io::ip::tcp::socket&& socket): _socket(std::move(socket)) {
         boost::system::error_code ec;
         // set the username as remote address
@@ -10,8 +12,7 @@ namespace Networking {
         name << _socket.remote_endpoint();
         _username = name.str();
     }
-    
-    // awaits for a new message from client
+
     void TcpConnection::asyncRead(){
         io::async_read_until(_socket,_streambuff,"\n",[self = shared_from_this()](boost::system::error_code ec, size_t bytesTransfered){
             self->onRead(ec,bytesTransfered);
@@ -21,7 +22,7 @@ namespace Networking {
         if(ec) {
             _socket.close(ec);
 
-            // TODO: add error handler
+            _errorHandler();
             return;
         }
 
@@ -30,15 +31,11 @@ namespace Networking {
         message << _username << ": " << std::istream(&_streambuff).rdbuf();
         _streambuff.consume(bytesTransfered);
 
-        std::cout << message.str();
-
-        // TODO: add message handler
+        _messageHandler(message.str());
 
         // recursively call next reading 
         asyncRead();
     }
-    
-    // awaits for a new message to be sent to client
     void TcpConnection::asyncWrite() {
         io::async_write(_socket,io::buffer(_outgoingMessages.front()),[self = shared_from_this()](boost::system::error_code ec, size_t bytesTransfered){
             self->onWrite(ec,bytesTransfered);
@@ -48,7 +45,7 @@ namespace Networking {
         if(ec) {
             _socket.close(ec);
 
-            // TODO: add error handler
+            _errorHandler();
             return;
         }
 
@@ -62,7 +59,11 @@ namespace Networking {
 
     }
 
-    void TcpConnection::Start() {
+    // ======================== Public methods ========================
+
+    void TcpConnection::Start(MessageHandler&& messageHandler, ErrorHandler&& errorHandler) {
+        _messageHandler = std::move(messageHandler);
+        _errorHandler = std::move(errorHandler);
         asyncRead();
     }
 

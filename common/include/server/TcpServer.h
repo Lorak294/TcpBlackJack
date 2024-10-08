@@ -17,6 +17,13 @@ namespace Networking {
     
     class TcpServer
     {
+        // called whenever new client connects to the server
+        using OnJoinHandler = std::function<void(TcpConnection::pointer)>;
+        // called whenever client disconnects from the server
+        using OnLeaveHandler = std::function<void(TcpConnection::pointer)>;
+        // called whenever server receives message from the client
+        using OnClentMessageHandler = std::function<void(std::string)>;
+
     private:
         Ipv _ipVersion;
         int _port;
@@ -29,7 +36,12 @@ namespace Networking {
         
         // set of current connections
         std::unordered_set<TcpConnection::pointer> _connections {};
-
+    public:
+        OnJoinHandler OnJoin;
+        OnLeaveHandler OnLeave;
+        OnClentMessageHandler OnClientMessage;
+    
+    private:
         void startAccepting();
 
     public:

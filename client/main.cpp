@@ -1,45 +1,30 @@
+#include <client/TcpClient.h>
 #include <iostream>
-#include "Card.h"
-#include <boost/asio.hpp>
+#include <thread>
 
-using boost::asio::ip::tcp;
+int main(int argc, char* argv[]) {
+    Networking::TcpClient client {"localhost", 1337};
 
-int main(int argc, char* argv[]){
+    client.OnMessage = [](const std::string& message) {
+        std::cout << message;
+    };
 
-    try
-    {
-        boost::asio::io_context io_context;
-        // resolve the enpoint which will be listend
-        tcp::resolver resolver(io_context);
-        tcp::resolver::results_type endpoints = resolver.resolve("127.0.0.1","1337");
+    // run client on a separate thread
+    std::thread t{[&client] () { client.Run(); }};
 
-        // connect endpoint to a socket
-        tcp::socket socket(io_context);
-        boost::asio::connect(socket,endpoints);
+    // on current thread run the input loop
+    while(true) {
+        std::string message;
+        getline(std::cin, message);
 
-        // listen to messages in a loop
-        while(true) {
-            std::array<char,128> buffer;
-            boost::system::error_code error;
+        if (message == "\\q") break;
+        message += "\n";
 
-            // read the message into the buffer
-            size_t length = socket.read_some(boost::asio::buffer(buffer),error);
-            
-            // if we receive eof the server has closed the connection
-            if(error == boost::asio::error::eof) {
-                break;
-            } else if(error){
-                throw boost::system::system_error(error);
-            }
-
-            // print the message
-            std::cout.write(buffer.data(),length);
-        }
+        client.Post(message);
     }
-    catch(const std::exception& e)
-    {
-        std::cerr << e.what() << '\n';
-    }
-    
+
+    // stop the client and wait for the thread
+    client.Stop();
+    t.join();
     return 0;
 }

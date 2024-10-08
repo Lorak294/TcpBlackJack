@@ -5,12 +5,7 @@ namespace Networking {
 
     using boost::asio::ip::tcp;
 
-    TcpServer::TcpServer(Ipv ipv, int port) : 
-        _ipVersion(ipv), 
-        _port(port), 
-        _acceptor(tcp::acceptor(_ioContext, tcp::endpoint(_ipVersion == Ipv::V4 ? tcp::v4() : tcp::v6(),_port))) {}
-
-
+    // ======================== Private methods ========================
     void TcpServer::startAccepting() {
         // create new socket where new connection will be awaited
         _socket.emplace(_ioContext);
@@ -23,15 +18,34 @@ namespace Networking {
                 auto connection = TcpConnection::Create(std::move(*_socket));
                 _connections.insert(connection);
 
+                if(OnJoin) {
+                    OnJoin(connection);
+                }
+
                 // start the connection
                 if(!error) {
-                    connection->Start();
+                    connection->Start(
+                        [this](const std::string& msg) { if(OnClientMessage) OnClientMessage(msg);},
+                        [&, weak = std::weak_ptr(connection)]() {
+                            if(auto shared = weak.lock(); shared && _connections.erase(shared)) {
+                                if(OnLeave){
+                                    OnLeave(shared);
+                                }
+                            }
+                        }
+                    );
                 }
                 
                 // recursively wait for another connection 
                 startAccepting();
         });
     }
+
+    // ======================== Public methods ========================
+    TcpServer::TcpServer(Ipv ipv, int port) : 
+        _ipVersion(ipv), 
+        _port(port), 
+        _acceptor(tcp::acceptor(_ioContext, tcp::endpoint(_ipVersion == Ipv::V4 ? tcp::v4() : tcp::v6(),_port))) {}
 
     int TcpServer::Run() {
         try
@@ -46,7 +60,6 @@ namespace Networking {
         }
         return 0;
     }
-
     void TcpServer::Broadcast(const std::string& message) {
         for(auto& connection : _connections) {
             connection->Post(message);
